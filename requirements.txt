@@ -1,0 +1,12 @@
+streamlit
+yfinance
+pandas
+numpy
+scikit-learn
+xgboost
+shap
+matplotlib
+ta
+joblib
+plotly
+optuna
