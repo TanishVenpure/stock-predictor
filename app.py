@@ -133,7 +133,7 @@ if st.button("🔮 Predict", type="primary"):
                 explainer  = shap.TreeExplainer(models["rf"])
                 shap_exp   = explainer(pd.DataFrame(latest_scaled, columns=models["feats"]))
                 fig = plt.figure(figsize=(8, 5))
-                shap.plots.waterfall(shap_exp[0], max_display=12, show=False)
+                shap.plots.waterfall(shap_exp[0,1], max_display=12, show=False)
                 plt.tight_layout()
 
                 col1, col2, col3 = st.columns([0.5, 4, 0.5])
