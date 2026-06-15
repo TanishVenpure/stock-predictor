@@ -128,24 +128,19 @@ if st.button("🔮 Predict", type="primary"):
 
             st.divider()
 
-            st.subheader(" Why this prediction? (SHAP)")
+            st.subheader("Why this prediction? (SHAP)")
             with st.spinner("Computing SHAP explanation..."):
                 explainer  = shap.TreeExplainer(models["rf"])
-                shap_vals  = explainer.shap_values(latest_scaled)
-                sv = (shap_vals[1] if isinstance(shap_vals, list)
-                      else shap_vals)
+                shap_exp   = explainer(pd.DataFrame(latest_scaled, columns=models["feats"]))
+                fig = plt.figure(figsize=(8, 5))
+                shap.plots.waterfall(shap_exp[0], max_display=12, show=False)
+                plt.tight_layout()
 
-                fig, ax = plt.subplots(figsize=(10, 5))
-                shap.summary_plot(
-                    sv,
-                    latest_scaled,
-                    feature_names=models["feats"],
-                    plot_type="bar",
-                    show=False,
-                    
-                )
-                st.pyplot(plt.gcf())  
-                plt.close()
+                col1, col2, col3 = st.columns([0.5, 4, 0.5])
+                with col2:
+                    st.pyplot(fig, use_container_width=True)
+                plt.close(fig)
+                
 
         except Exception as e:
             st.error(f"Error: {e}")
@@ -172,7 +167,30 @@ with col_b:
 
 with st.expander("🔍 SHAP Feature Importance"):
     try:
-        st.image("reports/shap_summary.png",
-                 use_container_width=True)
-    except:
-        st.info("SHAP summary not found — run Phase 4 first")
+        # use RF feature importance instead of SHAP png
+        import plotly.express as px
+        
+        feat_imp = pd.DataFrame({
+            "Feature"   : models["feats"],
+            "Importance": models["rf"].feature_importances_
+        }).sort_values("Importance", ascending=False).head(15)
+
+        fig = px.bar(
+            feat_imp,
+            x="Importance",
+            y="Feature",
+            orientation="h",
+            title="Top 15 Feature Importances — Random Forest",
+            color="Importance",
+            color_continuous_scale="Blues",
+            height=400        # ← controls size
+        )
+        fig.update_layout(
+            yaxis=dict(autorange="reversed"),
+            coloraxis_showscale=False,
+            margin=dict(l=10, r=10, t=40, b=10)
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Could not load feature importance: {e}")
