@@ -132,12 +132,35 @@ if st.button("🔮 Predict", type="primary"):
             st.subheader("🧠 Why this prediction? (SHAP)")
             with st.spinner("Computing SHAP explanation..."):
                 try:
-                    explainer  = shap.TreeExplainer(models["rf"])
+                    explainer = shap.TreeExplainer(models["rf"])
+
                     shap_vals = explainer.shap_values(
-                        pd.DataFrame(latest_scaled, columns=models["feats"])
+                        pd.DataFrame(
+                            latest_scaled,
+                            columns=models["feats"]
+                        )
                     )
-                    sv_class1  = np.array(shap_vals[1]).flatten()
-                    base_value = float(explainer.expected_value[1])
+
+                    # Handle both old and new SHAP versions
+                    if isinstance(shap_vals, list):
+                        sv_class1 = np.array(
+                            shap_vals[-1]
+                        ).flatten()
+                    else:
+                        shap_vals = np.array(shap_vals)
+                        if shap_vals.ndim == 3:
+                            sv_class1 = shap_vals[0, :, -1]
+                        else:
+                            sv_class1 = shap_vals.flatten()
+
+                    expected = explainer.expected_value
+                    if isinstance(expected, (list, np.ndarray)):
+                        base_value = float(
+                            np.array(expected).flatten()[-1]
+                        )
+                    else:
+                        base_value = float(expected)
+
                     explanation = shap.Explanation(
                         values=sv_class1,
                         base_values=base_value,
