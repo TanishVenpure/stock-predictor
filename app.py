@@ -4,6 +4,7 @@ import numpy as np
 import joblib
 import shap
 import matplotlib.pyplot as plt
+import plotly.express as px
 import yfinance as yf
 import sys, os
 
@@ -128,19 +129,36 @@ if st.button("🔮 Predict", type="primary"):
 
             st.divider()
 
-            st.subheader("Why this prediction? (SHAP)")
+            st.subheader("🧠 Why this prediction? (SHAP)")
             with st.spinner("Computing SHAP explanation..."):
                 explainer  = shap.TreeExplainer(models["rf"])
-                shap_exp   = explainer(pd.DataFrame(latest_scaled, columns=models["feats"]))
-                fig = plt.figure(figsize=(8, 5))
-                shap.plots.waterfall(shap_exp[0,1], max_display=12, show=False)
-                plt.tight_layout()
+                shap_vals  = explainer.shap_values(latest_scaled)
+                sv = shap_vals[1] if isinstance(shap_vals, list) else shap_vals
 
-                col1, col2, col3 = st.columns([0.5, 4, 0.5])
+                feature_importance = pd.DataFrame({
+                    "Feature"   : models["feats"],
+                    "Importance": np.abs(sv[0])
+                }).sort_values("Importance", ascending=False).head(10)
+
+                fig = px.bar(
+                    feature_importance,
+                    x="Importance",
+                    y="Feature",
+                    orientation="h",
+                    title="Top 10 Features Influencing the Prediction",
+                    color="Importance",
+                    color_continuous_scale="Blues",
+                    height=300
+                )
+                fig.update_layout(
+                    yaxis=dict(autorange="reversed"),
+                    coloraxis_showscale=False,
+                    margin=dict(l=10, r=10, t=40, b=10)
+                )
+                col1, col2, col3 = st.columns([1, 3, 1])
                 with col2:
-                    st.pyplot(fig, use_container_width=True)
-                plt.close(fig)
-                
+                    st.plotly_chart(fig, use_container_width=True)
+
 
         except Exception as e:
             st.error(f"Error: {e}")
